@@ -4,12 +4,12 @@ import { ItemData } from './types'
 const testDatas = new WeakMap<vscode.TestItem, ItemData>()
 const tests = new Map<string, WeakRef<vscode.TestItem>>()
 
-export function add (id: string, test: vscode.TestItem, data: ItemData) {
+export function addTestToCache (id: string, test: vscode.TestItem, data: ItemData) {
   testDatas.set(test, data)
   tests.set(id, new WeakRef(test))
 }
 
-export function getData (test: vscode.TestItem) {
+export function getTestData (test: vscode.TestItem): ItemData {
   return testDatas.get(test)!
 }
 

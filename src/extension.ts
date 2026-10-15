@@ -1,11 +1,12 @@
 import * as vscode from 'vscode'
-import * as minimatch from 'minimatch'
+import { minimatch } from 'minimatch'
 import * as config from './config'
 import * as cache from './cache'
 import * as runner from './runner'
 import { ItemType, Test } from './types'
 import { parse } from './parser'
 import { normalize } from 'path'
+import { Logger } from './log'
 
 export function activate (context: vscode.ExtensionContext) {
   const controller = vscode.tests.createTestController('busted-test-explorer', 'Busted Test Explorer')

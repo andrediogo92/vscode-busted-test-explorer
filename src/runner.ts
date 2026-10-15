@@ -82,7 +82,7 @@ function getExecutable (profile : string) : string {
 }
 
 // Transmits messages to a special tab with test results.
-function resultConcole (run: vscode.TestRun, msg : string, location?: vscode.Location, test?:vscode.TestItem) {
+function printToResultConsole (run: vscode.TestRun, msg : string, location?: vscode.Location, test?:vscode.TestItem) {
   run.appendOutput(msg + '\r\n', location, test)
 }
 

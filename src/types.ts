@@ -26,10 +26,11 @@ export interface ItemData {
 }
 
 export type Report = {
-  type: string,
-  test: string,
+  type: 'testStart' | 'testEnd' | 'error',
+  testSource: string,
+  name: string,
   message?: string,
   line?: number,
   duration?: number,
-  status: string
+  status: 'success' | 'failure' | 'pending' | 'error'
 }
