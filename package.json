@@ -1,8 +1,8 @@
 {
   "name": "busted-test-explorer",
-  "displayName": "Busted Test Explorer",
+  "displayName": "Nu Busted Test Explorer",
   "description": "Discover and run your lua busted tests from vscode",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "repository": {
     "type": "git",
     "url": "https://github.com/andrediogo92/vscode-busted-test-explorer"
@@ -38,7 +38,7 @@
   "main": "./out/extension.js",
   "contributes": {
     "configuration": {
-      "title": "Busted Test Explorer",
+      "title": "Nu Busted Test Explorer",
       "properties": {
         "busted-test-explorer.executable": {
           "type": "string",

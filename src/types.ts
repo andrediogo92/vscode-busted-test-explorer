@@ -1,5 +1,23 @@
+export type TestSuiteBlock = 'describe' | 'context' | 'insulate' | 'expose'
+export type TestCaseBlock = 'it' | 'spec' | 'pending'
+export type TestBlock = TestSuiteBlock | TestCaseBlock
+
+export const testSuiteBlocks: TestSuiteBlock[] = ['describe', 'context', 'insulate', 'expose']
+export const testCaseBlocks: TestCaseBlock[] = ['it', 'spec', 'pending']
+
+export enum TestItemType {
+  file,
+  testSuite,
+  testCase
+}
+
+export interface TestItemData {
+  type: TestItemType;
+  name?: string;
+}
+
 export type Test = {
-  type: string,
+  type: TestItemType,
   name: string,
   loc: {
     start: {
@@ -14,18 +32,15 @@ export type Test = {
   child: Test[]
 }
 
-export enum ItemType {
-  file,
-  testSuite,
-  testCase
+export enum TestResult {
+  success,
+  failure,
+  error,
+  skipped,
+  empty
 }
 
-export interface ItemData {
-  type: ItemType;
-  name?: string;
-}
-
-export type Report = {
+export type TestReport = {
   type: 'testStart' | 'testEnd' | 'error',
   testSource: string,
   name: string,

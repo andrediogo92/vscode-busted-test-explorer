@@ -1,65 +1,108 @@
 import * as luaparse from 'luaparse'
-import { Test } from './types'
+import { Test, TestBlock, TestCaseBlock, testCaseBlocks, TestItemType, TestSuiteBlock, testSuiteBlocks } from './types'
+import { unescapeSlashes } from './utils'
 
-const suiteBlocks = ['describe', 'insulate', 'expose']
-const testBlocks = ['it', 'pending']
+/**
+ * @param expression the expression to check
+ * @returns whether the expression is one of the test blocks
+ */
+function isTestBlock (expression: string): expression is TestBlock {
+  return isTestCaseBlock(expression) || isTestSuiteBlock(expression)
+}
 
-function isBlockFunctionCall (node: any) {
-  if (node.type === 'CallStatement' && node.expression?.type === 'CallExpression') {
-    return node.expression.base.type === 'Identifier' && [...suiteBlocks, ...testBlocks].includes(node.expression.base.name)
+/**
+ * @param expression the expression to check
+ * @returns whether the expression is one of the test case blocks
+ */
+function isTestCaseBlock (expression: string): expression is TestCaseBlock {
+  return (testCaseBlocks as readonly string[]).includes(expression)
+}
+
+/**
+ * @param expression the expression to check
+ * @returns whether the expression is one of the test suite blocks
+ */
+function isTestSuiteBlock (expression: string): expression is TestSuiteBlock {
+  return (testSuiteBlocks as readonly string[]).includes(expression)
+}
+
+function isCallStatement (node: luaparse.Statement): node is luaparse.CallStatement {
+  return node.type === 'CallStatement'
+}
+
+function isCallExpression (expression: luaparse.CallExpression | luaparse.StringCallExpression | luaparse.TableCallExpression): expression is luaparse.CallExpression {
+  return expression?.type === 'CallExpression'
+}
+
+function isIdentifier (base: luaparse.Expression): base is luaparse.Identifier {
+  return base.type === 'Identifier'
+}
+
+/**
+ * Checks the block is a test suite block or a regular test case or throws an error
+ * @param blockName
+ * @returns whether the block is a test suite block, or a test case
+ */
+function getType (blockName: TestBlock): TestItemType {
+  let result: TestItemType
+  if (isTestSuiteBlock(blockName)) {
+    result = TestItemType.testSuite
+  } else if (isTestCaseBlock(blockName)) {
+    result = TestItemType.testCase
+  } else {
+    throw new Error('Unexpected block name: ' + blockName)
   }
-  return false
+  return result
 }
 
-function getType (blockName: string) {
-  if (suiteBlocks.includes(blockName)) {
-    return 'Suite'
-  } else if (testBlocks.includes(blockName)) {
-    return 'TestCase'
+function parseNode (currentBlock: Test, node: luaparse.Statement) {
+  if (!isCallStatement(node)) {
+    return
   }
-  throw new Error('Unexpected block name: ' + blockName)
-}
+  if (!isCallExpression(node.expression)) {
+    return
+  }
+  if (!isIdentifier(node.expression.base)) {
+    return
+  }
+  if (!isTestBlock(node.expression.base.name)) {
+    return
+  }
 
-function unescapeLuaString (string: string) {
-  return string.replace(/\\(.)/g, '$1')
-}
+  const type = getType(node.expression.base.name)
+  let name = ''
+  if (node.expression.arguments[0]?.type === 'StringLiteral') {
+    const raw = node.expression.arguments[0].raw
+    name = unescapeSlashes(raw.substring(1, raw.length - 1))
+  }
 
-function parseNode (currentBlock: Test, node: any) {
-  if (isBlockFunctionCall(node)) {
-    const type = getType(node.expression.base.name)
-    let name = ''
-    if (node.expression.arguments[0]?.type === 'StringLiteral') {
-      const raw = node.expression.arguments[0].raw
-      name = unescapeLuaString(raw.substring(1, raw.length - 1))
+  const test = {
+    type,
+    name,
+    loc: <Test['loc']>node.expression.loc,
+    child: []
+  }
+
+  currentBlock.child.push(test)
+
+  if (type === TestItemType.testSuite) {
+    let body: luaparse.Statement[] | undefined
+    if (node.expression.arguments[0].type === 'FunctionDeclaration') {
+      body = node.expression.arguments[0].body
+    } else if (node.expression.arguments[1].type === 'FunctionDeclaration') {
+      body = node.expression.arguments[1].body
     }
-    const test = {
-      type,
-      name,
-      loc: <Test['loc']>node.expression.loc,
-      child: []
-    }
-
-    currentBlock.child.push(test)
-
-    if (type === 'Suite') {
-      let body
-      if (node.expression.arguments[0].type === 'FunctionDeclaration') {
-        body = node.expression.arguments[0].body
-      } else if (node.expression.arguments[1].type === 'FunctionDeclaration') {
-        body = node.expression.arguments[1].body
-      }
-      if (body) {
-        body.forEach((node: any) => {
-          parseNode(test, node)
-        })
-      }
+    if (body) {
+      body.forEach((node: luaparse.Statement) => {
+        parseNode(test, node)
+      })
     }
   }
 }
 
 export function parse (code: string): Test[] {
   const tests = {
-    type: '',
+    type: TestItemType.file,
     name: '',
     loc: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } },
     child: []
@@ -71,7 +114,7 @@ export function parse (code: string): Test[] {
   })
 
   if (ast.type === 'Chunk' && ast.body instanceof Array) {
-    ast.body.forEach((node: any) => {
+    ast.body.forEach((node: luaparse.Statement) => {
       parseNode(tests, node)
     })
   }

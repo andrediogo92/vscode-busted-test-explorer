@@ -7,57 +7,68 @@ return function(options)
   local handler = require("busted.outputHandlers.base")()
 
   local currentFile = nil
-  local lastFaillure = nil
+  local lastFailure = nil
 
   local function report(entry)
     print(MAGIC, json.encode(entry))
   end
 
   local function get_test_id(element)
-    if element.trace then
-      return element.trace.source:sub(2) .. ":" .. handler.getFullName(element)
+    if element and element.trace then
+      return element.trace.source:sub(2), handler.getFullName(element)
     end
   end
 
   handler.testStart = function(element, parent)
+    local testSource, name = get_test_id(element)
     report({
       type = "testStart",
-      test = get_test_id(element),
+      testSource = testSource,
+      name = name
     })
   end
 
   handler.testEnd = function(element, parent, status, trace)
-    local test = get_test_id(element)
+    local testSource, name = get_test_id(element)
     local entry = {
       type = "testEnd",
-      test = test,
+      testSource = testSource,
+      name = name,
       duration = element.duration*1000,
       status = status
     }
 
-    if (status == "failure" or status == "error") and lastFaillure and lastFaillure.test == test then
-      entry.message = lastFaillure.message
-      entry.line = lastFaillure.line
+    if (status == "failure" or status == "error") and
+        lastFailure and
+        lastFailure.testSource == testSource and
+        lastFailure.name == name
+    then
+      entry.message = lastFailure.message
+      entry.line = lastFailure.line
     end
 
     report(entry)
   end
 
   handler.failureTest = function(element, parent, message, trace)
-    lastFaillure = {
-      test = get_test_id(element),
+    local testSource, name = get_test_id(element)
+    lastFailure = {
+      testSource = testSource,
+      name = name,
       message = message,
       line = trace.currentline
     }
   end
 
   handler.error = function(element, parent, message, trace)
+    local testSource, name = get_test_id(element)
     if element.descriptor ~= "describe" then
       element = parent
     end
     report({
       type = "error",
-      test = get_test_id(element) or element.name,
+      testSource = testSource or '',
+      name = name or element.name,
       message = type(trace.message) == "table" and trace.message.message or trace.message,
       line = trace.currentline
     })

@@ -1,8 +1,8 @@
 import * as vscode from 'vscode'
 import { normalize } from 'path'
-import { Report } from './types'
+import { TestReport } from './types'
 
-export function rebuildId (report: Report) {
+export function rebuildId (report: TestReport) {
   return `${report.testSource}${report.testSource.length > 0 ? ':' : ''}${report.name}`
 }
 
