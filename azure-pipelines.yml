@@ -1,0 +1,41 @@
+# Build a Node.js project for vsce publishing.
+
+trigger:
+  branches:
+    include:
+    - main
+  tags:
+    include:
+    - 'v*.*.*'
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  nodeVersion: '26.x'
+
+jobs:
+- job: vsce-publish
+  displayName: 'Build and publish VS Code Extension'
+  condition: contains(variables['Build.SourceBranch'], 'refs/tags/v')
+  steps:
+    # Install Node.js
+    - task: UseNode@1
+      inputs:
+        version: $(nodeVersion)
+      displayName: 'Install Node.js'
+
+    - script: |
+        npm install -g @vscode/vsce
+        npm install
+      displayName: "Install vsce and dependencies"
+
+    # Publish
+    - task: AzureCLI@2
+      displayName: 'Publish using managed identity'
+      inputs:
+        azureSubscription: 'vsce-publish'
+        scriptType: pscore
+        scriptLocation: inlineScript
+        inlineScript: |
+          vsce publish --azure-credential
