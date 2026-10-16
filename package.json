@@ -1,5 +1,5 @@
 {
-  "name": "busted-test-explorer",
+  "name": "nu-busted-test-explorer",
   "displayName": "Nu Busted Test Explorer",
   "description": "Discover and run your lua busted tests from vscode",
   "version": "0.2.6",
