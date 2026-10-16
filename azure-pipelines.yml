@@ -15,7 +15,7 @@ variables:
   nodeVersion: '26.x'
 
 jobs:
-- job: vsce-publish
+- job: vscepublish
   displayName: 'Build and publish VS Code Extension'
   condition: contains(variables['Build.SourceBranch'], 'refs/tags/v')
   steps:
