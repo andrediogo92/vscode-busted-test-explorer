@@ -1,11 +1,16 @@
 import { workspace } from 'vscode'
 import { expandString } from './expand'
+import { ExecutableProfile, ParserLuaVersion } from './types'
 
 const section = 'busted-test-explorer'
 
 enum ConfigKey {
-  executable = 'executable',
-  testfilepattern = 'testfilepattern',
+  localExecutable = 'localExecutable',
+  wslExecutable = 'wslExecutable',
+  dockerExecutable = 'dockerExecutable',
+  testFilePattern = 'testFilePattern',
+  luaVersion = 'luaVersion',
+  profile = 'profile',
   args = 'args',
   cwd = 'cwd',
   env = 'env'
@@ -33,12 +38,37 @@ function getValue<T> (key: ConfigKey): T {
   return value
 }
 
-export function getExecutable (): string {
-  return getValue<string>(ConfigKey.executable)
+export function getWSLExecutable (): string {
+  return getValue<string>(ConfigKey.wslExecutable)
+}
+
+export function getDockerExecutable (): string {
+  return getValue<string>(ConfigKey.dockerExecutable)
+}
+
+export function getLocalExecutable (): string {
+  return getValue<string>(ConfigKey.localExecutable)
+}
+
+export function getProfile (): ExecutableProfile {
+  let profile = ExecutableProfile.local
+  switch (getValue<string>(ConfigKey.profile)) {
+    case 'wsl':
+      profile = ExecutableProfile.wsl
+      break
+    case 'docker':
+      profile = ExecutableProfile.docker
+      break
+  }
+  return profile
+}
+
+export function getLuaVersion (): ParserLuaVersion {
+  return getValue<ParserLuaVersion>(ConfigKey.luaVersion)
 }
 
 export function getFilePattern (): string {
-  return getValue<string>(ConfigKey.testfilepattern)
+  return getValue<string>(ConfigKey.testFilePattern)
 }
 
 export function getArguments (): string[] {

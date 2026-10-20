@@ -1,3 +1,7 @@
+import * as vscode from "vscode"
+
+export type ParserLuaVersion = '5.1' | '5.2' | '5.3' | 'LuaJIT'
+
 export type TestSuiteBlock = 'describe' | 'context' | 'insulate' | 'expose'
 export type TestCaseBlock = 'it' | 'spec' | 'pending'
 export type TestBlock = TestSuiteBlock | TestCaseBlock
@@ -5,10 +9,24 @@ export type TestBlock = TestSuiteBlock | TestCaseBlock
 export const testSuiteBlocks: TestSuiteBlock[] = ['describe', 'context', 'insulate', 'expose']
 export const testCaseBlocks: TestCaseBlock[] = ['it', 'spec', 'pending']
 
+export enum ExecutableProfile {
+  local,
+  docker,
+  wsl
+}
+
 export enum TestItemType {
   file,
   testSuite,
   testCase
+}
+
+export enum TestResult {
+  success,
+  failure,
+  error,
+  skipped,
+  empty
 }
 
 export interface TestItemData {
@@ -30,14 +48,6 @@ export type Test = {
     }
   },
   child: Test[]
-}
-
-export enum TestResult {
-  success,
-  failure,
-  error,
-  skipped,
-  empty
 }
 
 export type TestReport = {

@@ -1,4 +1,5 @@
 import * as luaparse from 'luaparse'
+import * as config from './config'
 import { Test, TestBlock, TestCaseBlock, testCaseBlocks, TestItemType, TestSuiteBlock, testSuiteBlocks } from './types'
 import { unescapeSlashes } from './utils'
 
@@ -109,6 +110,7 @@ export function parse (code: string): Test[] {
   }
 
   const ast = luaparse.parse(code.toString(), {
+    luaVersion: config.getLuaVersion(),
     comments: false,
     locations: true
   })

@@ -4,7 +4,7 @@ import * as readline from 'readline'
 import * as config from './config'
 import * as cache from './cache'
 import * as path from 'path'
-import { TestReport, TestResult } from './types'
+import { ExecutableProfile, TestReport, TestResult } from './types'
 import { Logger } from './log'
 import { escapeLuaPatternMagicCharacters, quoteIfWindows, rebuildId } from './utils'
 import { hashB64String } from './hash'
@@ -77,17 +77,17 @@ function withIdleWatchdog (
  * @param profile the profile by string key, defaults to local executable if the profile is unknown
  * @returns the executable path as a string
  */
-function getExecutable (profile : string) : string {
+function getExecutable (profile : ExecutableProfile) : string {
   let bustedExecutable: string
   switch (profile) {
-    case 'wsl':
-      bustedExecutable = vscode.workspace.getConfiguration('busted-test-explorer').get<string>('wslExecutable', 'wsl busted')
+    case ExecutableProfile.wsl:
+      bustedExecutable = config.getWSLExecutable()
       break
-    case 'docker':
-      bustedExecutable = vscode.workspace.getConfiguration('busted-test-explorer').get<string>('dockerExecutable', 'docker run --rm my-lua busted')
+    case ExecutableProfile.docker:
+      bustedExecutable = config.getDockerExecutable()
       break
     default:
-      bustedExecutable = config.getExecutable() // default path (bat/exe)
+      bustedExecutable = config.getLocalExecutable() // default path (bat/exe)
       break
   }
 
@@ -314,7 +314,7 @@ export async function execute (
   token: vscode.CancellationToken
 ) {
   // getting profile to determine how to resolve busted executable
-  const profile = vscode.workspace.getConfiguration('busted-test-explorer').get<string>('profile', 'local')
+  const profile = config.getProfile()
 
   const bustedExecutable = getExecutable(profile)
   const reporterPath = path.join(context.extensionPath, 'res', 'reporter.lua')

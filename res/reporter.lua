@@ -63,7 +63,7 @@ return function(options)
   handler.error = function(element, parent, message, trace)
     local testSource, name = get_test_id(element)
     if element.descriptor ~= "describe" then
-      element = parent
+      element = parent or element
     end
     report({
       type = "error",

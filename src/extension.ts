@@ -117,6 +117,31 @@ function parseTestsInDocument (
   }
 }
 
+function setupFileWatchers (controller: vscode.TestController, parseOnChange: boolean) {
+  return vscode.workspace.workspaceFolders?.map(workspaceFolder => {
+    const pattern = new vscode.RelativePattern(workspaceFolder, config.getFilePattern())
+
+    const known = cache.getWatcher(workspaceFolder.uri)
+    if (known === undefined) {
+      const watcher = vscode.workspace.createFileSystemWatcher(pattern)
+
+      // When files are created, make sure there's a corresponding "file" node in the tree
+      watcher.onDidCreate(uri => getOrCreateFile(controller, uri))
+      if (parseOnChange) {
+        // When files change, re-parse them. Note that you could optimize this so
+        // that you only re-parse children that have been resolved in the past.
+        watcher.onDidChange(uri => parseTestsInFileContents(controller, getOrCreateFile(controller, uri)))
+      }
+      // And, finally, delete TestItems for removed files. This is simple, since
+      // we use the URI as the TestItem's ID.
+      watcher.onDidDelete(uri => controller.items.delete(hashB64String(normalizePath(uri))))
+      cache.addWatcher(workspaceFolder.uri, watcher)
+    }
+
+    return pattern
+  }) ?? []
+}
+
 /**
  * Discovers all files in current workspace and sets up file watchers for every workspace folder
  * continually searching for busted spec test files.
@@ -124,31 +149,13 @@ function parseTestsInDocument (
  * @returns An array of file watchers for every workspace folder
  */
 async function discoverAllFilesInWorkspace (
-  controller: vscode.TestController
-) {
-  if (!vscode.workspace.workspaceFolders) {
-    return [] // handle the case of no open folders
-  }
-
+  controller: vscode.TestController, patterns: vscode.RelativePattern[]
+): Promise<void[]> {
   return Promise.all(
-    vscode.workspace.workspaceFolders.map(async workspaceFolder => {
-      const pattern = new vscode.RelativePattern(workspaceFolder, config.getFilePattern())
-      const watcher = vscode.workspace.createFileSystemWatcher(pattern)
-
-      // When files are created, make sure there's a corresponding "file" node in the tree
-      watcher.onDidCreate(uri => getOrCreateFile(controller, uri))
-      // When files change, re-parse them. Note that you could optimize this so
-      // that you only re-parse children that have been resolved in the past.
-      watcher.onDidChange(uri => parseTestsInFileContents(controller, getOrCreateFile(controller, uri)))
-      // And, finally, delete TestItems for removed files. This is simple, since
-      // we use the URI as the TestItem's ID.
-      watcher.onDidDelete(uri => controller.items.delete(hashB64String(normalizePath(uri))))
-
-      for (const file of await vscode.workspace.findFiles(pattern)) {
+    patterns.map(async workspacePattern => {
+      for (const file of await vscode.workspace.findFiles(workspacePattern)) {
         getOrCreateFile(controller, file)
       }
-
-      return watcher
     })
   )
 }
@@ -216,7 +223,7 @@ function excludeTest (
  * @param context the extension context
  * @param controller the main controller
  * @param request the main run request
- * @param token a cancelation token
+ * @param token a cancellation token
  */
 async function runHandler (
   context: vscode.ExtensionContext,
@@ -255,14 +262,16 @@ export function activate (context: vscode.ExtensionContext) {
 
   controller.resolveHandler = async test => {
     if (!test) {
-      await discoverAllFilesInWorkspace(controller)
+      const patterns = setupFileWatchers(controller, true)
+      await discoverAllFilesInWorkspace(controller, patterns)
     } else {
       await parseTestsInFileContents(controller, test)
     }
   }
 
-  vscode.workspace.onDidOpenTextDocument(doc => parseTestsInDocument(controller, doc))
-  vscode.workspace.onDidChangeTextDocument(doc => parseTestsInDocument(controller, doc.document))
+  setupFileWatchers(controller, false)
+  cache.addListener(vscode.workspace.onDidOpenTextDocument(doc => parseTestsInDocument(controller, doc)))
+  cache.addListener(vscode.workspace.onDidChangeTextDocument(doc => parseTestsInDocument(controller, doc.document)))
 
   controller.createRunProfile(
     'Run',
@@ -274,4 +283,6 @@ export function activate (context: vscode.ExtensionContext) {
 }
 
 // this method is called when your extension is deactivated
-export function deactivate () { }
+export function deactivate () {
+  cache.clearDisposables()
+}

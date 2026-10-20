@@ -2,7 +2,7 @@
   "name": "nu-busted-test-explorer",
   "displayName": "Nu Busted Test Explorer",
   "description": "Discover and run your lua busted tests from vscode",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "repository": {
     "type": "git",
     "url": "https://github.com/andrediogo92/vscode-busted-test-explorer"
@@ -40,12 +40,6 @@
     "configuration": {
       "title": "Nu Busted Test Explorer",
       "properties": {
-        "busted-test-explorer.executable": {
-          "type": "string",
-          "minLength": 1,
-          "default": "busted",
-          "description": "Name or full path of the busted executable. If only a name is provided, the executable must be in PATH."
-        },
         "busted-test-explorer.args": {
           "type": "array",
           "items": {
@@ -58,15 +52,26 @@
           "type": "string",
           "description": "Working directory used by busted during test runs."
         },
+        "busted-test-explorer.luaVersion": {
+          "type": "string",
+          "enum": [
+            "5.1",
+            "5.2",
+            "5.3",
+            "LuaJIT"
+          ],
+          "default": "5.3",
+          "description": "Lua version to target for parser."
+        },
         "busted-test-explorer.env": {
           "type": "object",
           "additionalProperties": {
             "type": "string"
           },
           "default": {},
-          "description": "Environement variable appended to the environment when busted is executed."
+          "description": "Environment variable appended to the environment when busted is executed."
         },
-        "busted-test-explorer.testfilepattern": {
+        "busted-test-explorer.testFilePattern": {
           "type": "string",
           "default": "**/*_spec.lua",
           "description": "Test file pattern"
@@ -94,15 +99,23 @@
             "docker"
           ],
           "default": "local",
-          "description": "Where to run busted"
+          "description": "From where to run busted"
+        },
+        "busted-test-explorer.localExecutable": {
+          "type": "string",
+          "minLength": 1,
+          "default": "busted",
+          "description": "Name or full path of the local busted executable. If only a name is provided, the executable must be in PATH."
         },
         "busted-test-explorer.wslExecutable": {
           "type": "string",
+          "minLength": 1,
           "default": "wsl busted",
           "description": "Command to run busted inside WSL"
         },
         "busted-test-explorer.dockerExecutable": {
           "type": "string",
+          "minLength": 1,
           "default": "docker run --rm my-lua busted",
           "description": "Command to run busted inside Docker"
         }
